@@ -1,0 +1,54 @@
+randombg, a command tool for switching desktop backgrounds with 'feh'. ( You have to install 'feh' first. )
+randombg will search whole disk for all suitable images, then take one for your desktop background every other minutes according to randombg_config.
+You can set directory, image size, interval time, and sound on/off.
+
+randombg is made by www.lulinux.com. Thank you for visiting my blog!
+
+Usage:
+randombg <full_dir_path> [-wset|-w2560|-w1920|-w1680|-w1440|-w1366|-w1280|-w1024|-w800] [-iset|-i240|-i120|-i60|-i30|-i15|-i0]
+         Three parameters are optional. If no parameter, I'll call randombg config file. 
+         full_dir_path What image dir to use. If the path isn't in randombg_list, I'll ask to update db. 
+         -wset Use images whose width >= the number that you input .
+         -w2560 Use images whose width >= 2560 pixels.
+         -w1920 Use images whose width >= 1920 pixels.
+         -w1680 Use images whose width >= 1680 pixels.
+         -w1440 Use images whose width >= 1440 pixels.
+         -w1366 Use images whose width >= 1366 pixels.
+         -w1280 Use images whose width >= 1280 pixels.
+         -w1024 Use images whose width >= 1024 pixels.
+         -w800 Use images whose width >= 800 pixels.This is default.
+         -iset Set interval time to a number that you input.
+         -i240 Set interval time to 240 minutes.
+         -i120 Set interval time to 120 minutes.
+         -i60 Set interval time to 60 minutes.
+         -i30 Set interval time to 30 minutes.
+         -i15 Set interval time to 15 minutes.
+         -i0 Set interval time to 0.This is default.
+randombg [-c|--configure]
+         Configure directory, image width and interval time.
+randombg [-u|--updatedb]
+         Update randombg_list from whold disk.
+randombg --list-all
+         List all image files in randombg_list.
+randombg [-l|--list-current]
+         List current image files you'll use.
+randombg --show-config
+         Show configuration.
+randombg --sound-on
+         Play sound when switching background.
+randombg --sound-off
+         Do not play sound when switching background.
+randombg [-h|--help]
+         Show this help.
+randombg [-v|--version]
+         Show version.
+
+
+   randombg v3.0 by
+
+                         masturbate linux os, share my experience
+                  
+                                                                 
+                                                                 
+                                                                 
+                                                                 
