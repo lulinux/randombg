@@ -12,7 +12,6 @@
 #######################################
 
 function kill_old_randombg {
-#如果进程中原有randombg，就杀死之
 if test $( pgrep randombg|wc -l ) -gt 0 
 then
     old_pid=`mktemp -t randombg_oldpid_temp.XXXXXX`
@@ -27,7 +26,6 @@ then
 fi
 }
 
-#作者的logo
 function show_logo {
 cat <<EOF
 
@@ -45,7 +43,7 @@ cat <<EOF
 EOF
 }
 
-#提示randombg的用法的function
+
 function list_usage {
 echo "Usage:"
 echo "randombg <full_dir_path> [-wset|-w2560|-w1920|-w1680|-w1440|-w1366|-w1280|-w1024|-w800] [-iset|-i240|-i120|-i60|-i30|-i15|-i0]"
@@ -87,32 +85,25 @@ echo "randombg [-v|--version]"
 echo -e "\033[32m\033[9CShow version.\033[0m"
 }
 
-#生成randombg_list的function
 function updatedb {
-#搜索png图片，最后一小步去掉那些高度或宽度不适合做壁纸的图片
 find / \( -path /etc -o -path /proc -o -path /var -o -path /boot -o -path /tmp -o -path /bin -o -path /lib -o -path /root -o -path /dev -o -path /run -o -path /sbin -o -path /sys \) -prune -o -type f -iname '*.png' -exec file {} \;|sed 's/\(.*png\): .* \([0-9]* x [0-9]*\).*/\2 \1/'|sed 's/^\s*//g'|awk 'int($1)>=800 && int($3)>=600{print}'>~/.randombg_list
-#搜索jpg图片，最后一小步去掉那些高度或宽度不适合做壁纸的图片
 find / \( -path /etc -o -path /proc -o -path /var -o -path /boot -o -path /tmp -o -path /bin -o -path /lib -o -path /root -o -path /dev -o -path /run -o -path /sbin -o -path /sys \) -prune -o -type f -iname '*.jpg' -exec file {} \;|sed -e "s/\:\ JPEG\ image\ data.*\ precision\ 8\,//g" -e "s/\,\ frames\ .//g"|awk '{print $NF;$NF="";print}'|sed 'N;s/\n/\ /'|sed "s/x/\ x\ /"|awk 'int($1)>=800 && int($3)>=600{print}'>>~/.randombg_list  
 }
 
 function check_db {
-#开始检查图像列表数据库
 echo "Detecting image list database..."
-#如果没有~/.randombg_list，则开始搜索整个硬盘生成jpg和png的壁纸数据库
 if [[ ! -f ~/.randombg_list ]] 
 then
-    #提示生成数据库中，并请耐心等待
     echo "No randombg_list file is deteceted in your home folder."
     echo "Searching whole disk for big jpg/png image file."
     echo "It'll take several minutes."
-    #先建立~/.randombg_list
+    
     touch ~/.randombg_list
-    #然后用上面的updatedb的function来生成image数据库
+
     updatedb
     echo "Done!"
     echo "----------------------------------------"
 else
-    #如果有~/.randombg_list，则提示图像列表文件已经找到
     echo "~/.randombg_list file is found!"
     echo "----------------------------------------"
 fi
@@ -120,7 +111,6 @@ fi
 
 function check_config {
 echo "Detecting randombg configuration file..."
-#开始检查配置文件，如果没有发现配置文件，则新建一个并写入一些默认值
 if [[ ! -f ~/.randombg_config ]] || [[ -z `cat ~/.randombg_config` ]]
 then
     echo "No randombg_config file is deteceted in your home folder."
@@ -129,12 +119,10 @@ then
     echo "Done!"
     echo "----------------------------------------"
 else
-    #如果有~/.randombg_config，则提示配置文件已经找到
     echo "~/.randombg_config file is found!"
     echo "----------------------------------------"
 fi
 
-#从配置文件中载入变量
 config_dir=`cat ~/.randombg_config|sed -n '/^directory:/'p|awk '{$1="";print}'`
 config_width=`cat ~/.randombg_config|sed -n '/^width:/'p|awk '{$1="";print}'`
 config_interval=`cat ~/.randombg_config|sed -n '/^interval:/'p|awk '{$1="";print}'`
@@ -147,7 +135,6 @@ fi
 }
 
 function set_bg {
-#提示安装feh壁纸软件
 if [[ ! -f /usr/bin/feh ]]
 then 
     echo "Dear! \033[36mYou need to install \"feh\" first.\033[0m"
@@ -157,7 +144,6 @@ then
     exit 1
 fi
 
-#提示当前路径和图像大小
 echo "Directory: $config_dir"
 echo "----------------------------------------"
 echo "Image width: >= $config_width"
@@ -165,7 +151,6 @@ echo "----------------------------------------"
 echo "Interval time: $config_interval minutes"
 echo "----------------------------------------"
 
-#统计bglist里有多少张壁纸
 bgcount=`cat $bglist | wc -l`
 echo "Image files count: $bgcount"
 echo "----------------------------------------"
@@ -186,14 +171,14 @@ then
             echo "----------------------------------------"
         fi
         bgold=$(cat ~/.config/nitrogen/bg-saved.cfg|grep ^file|sed 's/file=//')
-        #如果安装了nitrogen，就把图片路径保存到~/.config/nitrogen/bg-saved.cfg
+
         if [[ -f /usr/bin/nitrogen ]]
         then
             cat ~/.config/nitrogen/bg-saved.cfg|sed "/^file.*$/"d>~/.config/nitrogen/bg-saved1.cfg
             echo "file=$bgselected">>~/.config/nitrogen/bg-saved1.cfg
             mv ~/.config/nitrogen/bg-saved1.cfg ~/.config/nitrogen/bg-saved.cfg
         fi
-        #如果满足旧背景跟新背景不同的条件，就退出循环
+
         if (ls $bgselected) >/dev/null 2>&1 && [[ $bgold != $bgselected ]] 
         then
             break
@@ -205,14 +190,52 @@ else
     exit 1
 fi
 
-#正式设置背景
 feh --bg-fill $bgselected
 
-#提示成功
+#for lxde
+if [[ -n `pgrep lxsession` ]]
+then
+    pcmanfm -w $bgselected
+fi
+#for gnome-session
+if [[ -n `pgrep gnome-session` ]]
+then
+    dconf write /org/gnome/desktop/background/picture-uri "'$bgselected'"
+fi
+#for kde4
+if [[ -n `pgrep plasma-desktop` ]]
+then
+    
+    l=`cat ~/.kde4/share/config/plasma-desktop-appletsrc|sed -n '/^\[Containments\].*\[image\]$/'p|sed "s/\]\[/\ /g"|awk '{print $2}'|wc -l`
+    for i in `seq $l`
+    do
+    kwriteconfig --file plasma-desktop-appletsrc --group Containments --group `cat ~/.kde4/share/config/plasma-desktop-appletsrc|sed -n '/^\[Containments\].*\[image\]$/'p|sed "s/\]\[/\ /g"|awk '{print $2}'|sed -n "$i"p` --group Wallpaper --group image --key wallpaper $bgselected
+    kwriteconfig --file plasma-desktop-appletsrc --group Containments --group `cat ~/.kde4/share/config/plasma-desktop-appletsrc|sed -n '/^\[Containments\].*\[image\]$/'p|sed "s/\]\[/\ /g"|awk '{print $2}'|sed -n "$i"p` --group Wallpaper --group image --key userswallpapers $bgselected
+    done
+    kill -HUP `pgrep plasma-desktop` && plasma-desktop
+fi
+#for mate-session
+if [[ -n `pgrep mate-session` ]]
+then
+    dconf write /org/mate/desktop/background/picture-filename "'$bgselected'"
+fi
+#for cinnamon-session
+if [[ -n `pgrep cinnamon-session` ]]
+then
+    dconf write /org/cinnamon/desktop/background/picture-uri "'$bgselected'"
+fi
+#for xfce4
+if [[ -n `pgrep xfce4-session` ]]
+then
+    xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/image-path -s $bgselected
+    xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/last-image -s $bgselected
+    xfconf-query -c xfce4-desktop -p /backdrop/screen0/monitor0/last-single-image -s $bgselected
+fi
+
 echo "Setting background job finished!"
 echo "----------------------------------------"
 
-if [ $config_sound == "on" ] #判断是否需要播放音乐，注意一定要用一对方括号，不要用两对方括号
+if [ $config_sound == "on" ]
 then
     if [[ -f /usr/bin/sndfile-play ]]
     then 
@@ -233,7 +256,7 @@ fi
 }
 
 function use_interval {
-if [[ $config_interval -gt 0 ]] #判断间隔时间是否大于0
+if [[ $config_interval -gt 0 ]]
 then                        
     while : 
     do
@@ -242,24 +265,19 @@ then
     done
 else
     set_bg
-    #删除所有临时文件
     rm -f $bglist 2> /dev/null
-    #杀死脚本本身
     killall randombg
     break
 fi
 }
 
 function make_templist {
-#先删除tmp文件夹下以前建立的randombg_list_temp文件
 rm -f /tmp/randombg_list_temp.*
-#建立一个临时文件存储当前可用图像文件列表
 bglist=`mktemp -t randombg_list_temp.XXXXXX`
 }
 
 function final_steps {
 make_templist
-#注意下面的一句中的grep $config_dir千万别写成grep "$config_dir"，否则永远不能生成bglist！饱经风霜得出的痛苦教训，切记切记！
 cat ~/.randombg_list|awk 'int($1)>='"$config_width"'{$1="";$2="";$3="";print}'|sed 's/^\s*//g'|grep $config_dir|sed "s/\ /\*/g">$bglist
 use_interval
 }
@@ -273,7 +291,7 @@ rm -f $bglist 2> /dev/null
 exit 1
 }
 #=================================================#
-#===============如果传递参数个数为0===============#
+#===============     $# -eq 0      ===============#
 #=================================================#
 if [ $# -eq 0 ] 
 then
@@ -284,47 +302,43 @@ then
 fi
 
 #=================================================#
-#===============如果传递参数个数为1===============#
+#===============     $# -eq 1      ===============#
 #=================================================#
-if [ $# -eq 1 ] #如果参数个数为1，则开始判断$1是什么
+if [ $# -eq 1 ]
 then
     case "$1" in
-        /*)#如果$1是一个文件夹路径            
+        /*)          
             check_db
-            #如果$1是一个在图像数据库列表里已经存在的路径
             if [[ -d "$1" ]] && [[ ! -z `cat ~/.randombg_list|awk '{$1="";$2="";$3="";print}'|grep "$1"` ]]
             then
                 kill_old_randombg
                 check_config
                 config_dir="$1"
                 final_steps
-                #如果$1不是一个在图像数据库列表里已经存在的路径，则提示更新 
             elif [[ -d "$1" ]] && [[ -z `cat ~/.randombg_list|awk '{$1="";$2="";$3="";print}'|grep "$1"` ]]
             then
                 kill_old_randombg
                 check_db
-                #搜索png图片，最后一小步去掉那些高度或宽度不适合做壁纸的图片
                 echo "This directory is not in your randombg_list database file, now I'll update it. "
                 find $1 -type f -iname '*.png' -exec file {} \;|sed 's/\(.*png\): .* \([0-9]* x [0-9]*\).*/\2 \1/'|sed 's/^\s*//g'|awk 'int($1)>=800 && int($3)>=600{print}'>>~/.randombg_list
-                #搜索jpg图片，最后一小步去掉那些高度或宽度不适合做壁纸的图片
                 find $1 -type f -iname '*.jpg' -exec file {} \;|sed -e "s/\:\ JPEG\ image\ data.*\ precision\ 8\,//g" -e "s/\,\ frames\ .//g"|awk '{print $NF;$NF="";print}'|sed 'N;s/\n/\ /'|sed "s/x/\ x\ /"|awk 'int($1)>=800 && int($3)>=600{print}'>>~/.randombg_list
                 check_config
                 config_dir="$1"
                 final_steps
-            else#如果$1不是一个正确的路径 
+            else
                 echo "wrong directory path, check it!"
                 echo "Usage: $0 [full_dir_path] [-w2560|-w1920|-w1680|-w1440|-w1366|-w1280|-w1024|-w800]"
                 exit 1
             fi;;
-        -wset) #自定义宽度
+        -wset)
             while true
             do
                 read -p "set width:" width
-                if [[ ! -z `grep '^[[:digit:]]*$' <<< "${width}"` ]] #判断输入的字符串是否全为数字
+                if [[ ! -z `grep '^[[:digit:]]*$' <<< "${width}"` ]]
                 then
                     kill_old_randomfg
                     check_db
-                    sed -i "s/^width.*$/width:\ $width/g" ~/.randombg_config #将宽度值写入.randombg_config
+                    sed -i "s/^width.*$/width:\ $width/g" ~/.randombg_config
                     check_config
                     final_steps
                     break
@@ -332,22 +346,22 @@ then
                     echo -e "\033[32mSorry.Please input a number.\033[0m"
                 fi
             done;;
-        -w2560|-w1920|-w1680|-w1440|-w1366|-w1280|-w1024|-w800) #设定图像宽度
+        -w2560|-w1920|-w1680|-w1440|-w1366|-w1280|-w1024|-w800)
             kill_old_randomfg
             check_db            
-            config_width=`sed "s/-w//g" <<< "$1"` #从$1中判断图像宽度
-            sed -i "s/^width.*$/width:\ $config_width/g" ~/.randombg_config #将宽度值写入.randombg_config          
+            config_width=`sed "s/-w//g" <<< "$1"`
+            sed -i "s/^width.*$/width:\ $config_width/g" ~/.randombg_config       
             check_config
             final_steps;;
-        -iset) #自定义间隔时间
+        -iset)
             while true
             do
                 read -p "set interval:" interval
-                if [[ ! -z `grep '^[[:digit:]]*$' <<< "${interval}"` ]] #判断输入的字符串是否全为数字
+                if [[ ! -z `grep '^[[:digit:]]*$' <<< "${interval}"` ]]
                 then                        
                     kill_old_randomfg
                     check_db
-                    sed -i "s/^interval*$/interval:\ $interval/g" ~/.randombg_config #将宽度值写入.randombg_config
+                    sed -i "s/^interval*$/interval:\ $interval/g" ~/.randombg_config
                     check_config
                     final_steps
                     break
@@ -355,14 +369,14 @@ then
                     echo -e "\033[32mSorry.Please input a number.\033[0m"
                 fi
             done;;
-        -i240|-i120|-i60|-i30|-i15|-i0) #设置间隔时间
+        -i240|-i120|-i60|-i30|-i15|-i0)
             kill_old_randomfg
             check_db            
-            config_interval=`sed "s/-i//g" <<< "$1"` #从$1中判断间隔时间
-            sed -i "s/^interval.*$/interval:\ $config_interval/g" ~/.randombg_config #将宽度值写入.randombg_config          
+            config_interval=`sed "s/-i//g" <<< "$1"`
+            sed -i "s/^interval.*$/interval:\ $config_interval/g" ~/.randombg_config        
             check_config
             final_steps;;
-        -l|--list-current) #列出当前可用的图像的列表
+        -l|--list-current)
             check_db
             check_config
             make_templist
@@ -372,7 +386,7 @@ then
             more -20 $bglist
             rm -f $bglist 2> /dev/null
             exit 0;;
-        --list-all) #列出所有图像的列表
+        --list-all)
             check_db
             make_templist
             cat ~/.randombg_list|awk '{print}'>$bglist
@@ -391,17 +405,17 @@ then
             check_config
             config_sound="off"
             sed -i "s/^sound.*$/sound:\ $config_sound/g" ~/.randombg_config;;
-        -u|--updatedb) #升级数据库
+        -u|--updatedb)
             check_db
             updatedb
             exit 0;;
-        -c|--configure) #配置3个参数
+        -c|--configure)
             while true
             do
                 read -p "set directory: " dir
-                if [[ -d $dir ]] #判断输入的字符串是否是正确的文件夹路径
+                if [[ -d $dir ]]
                 then                        
-                    echo "directory: $dir"> ~/.randombg_config #将文件夹路径写入.randombg_config
+                    echo "directory: $dir"> ~/.randombg_config
                     echo "----------------------------------------"
                     break
                 else
@@ -412,9 +426,9 @@ then
             while true
             do
                 read -p "set width: " width
-                if [[ ! -z `grep '^[[:digit:]]*$' <<< "${width}"` ]] #判断输入的字符串是否全为数字
+                if [[ ! -z `grep '^[[:digit:]]*$' <<< "${width}"` ]]
                 then                        
-                    echo "width: $width">> ~/.randombg_config #将宽度值写入.randombg_config
+                    echo "width: $width">> ~/.randombg_config
                     echo "----------------------------------------"
                     break
                 else
@@ -425,9 +439,9 @@ then
             while true
             do
                 read -p "set interval: " interval
-                if [[ ! -z `grep '^[[:digit:]]*$' <<< "${interval}"` ]] #判断输入的字符串是否全为数字
+                if [[ ! -z `grep '^[[:digit:]]*$' <<< "${interval}"` ]]
                 then                        
-                    echo "interval: $interval">> ~/.randombg_config #将间隔分钟数写入.randombg_config
+                    echo "interval: $interval">> ~/.randombg_config
                     echo "----------------------------------------"
                     break
                 else
@@ -454,19 +468,19 @@ then
 
             echo "All done! Now quit."
             exit 0;;
-        -h|--help) #显示帮助文件
+        -h|--help)
             list_usage
             show_logo
             exit 0;;
-        -v|--version) #显示帮助文件
+        -v|--version)
             show_logo
             exit 0;; 
-        *) #其他
+        *)
             error_happens;;
     esac
 fi
 #=================================================#
-#===============如果传递参数个数为2===============#
+#===============     $# -eq 2      ===============#
 #=================================================#
 if [ $# -eq 2 ]
 then
@@ -478,32 +492,28 @@ then
                 kill_old_randombg
                 check_config
                 config_dir="$1"
-                #如果$1不是一个在图像数据库列表里已经存在的路径，则提示更新 
             elif [[ -d "$1" ]] && [[ -z `cat ~/.randombg_list|awk '{$1="";$2="";$3="";print}'|grep "$1"` ]]
             then
                 kill_old_randombg
-                #搜索png图片，最后一小步去掉那些高度或宽度不适合做壁纸的图片
                 echo "This directory is not in your randombg_list database file, now I'll update it. "
                 find $1 -type f -iname '*.png' -exec file {} \;|sed 's/\(.*png\): .* \([0-9]* x [0-9]*\).*/\2 \1/'|sed 's/^\s*//g'|awk 'int($1)>=800 && int($3)>=600{print}'>>~/.randombg_list
-                #搜索jpg图片，最后一小步去掉那些高度或宽度不适合做壁纸的图片
                 find $1 -type f -iname '*.jpg' -exec file {} \;|sed -e "s/\:\ JPEG\ image\ data.*\ precision\ 8\,//g" -e "s/\,\ frames\ .//g"|awk '{print $NF;$NF="";print}'|sed 'N;s/\n/\ /'|sed "s/x/\ x\ /"|awk 'int($1)>=800 && int($3)>=600{print}'>>~/.randombg_list
                 check_config
                 config_dir="$1"                
-            else#如果$1不是一个正确的路径
+            else
                 config_dir=""
                 echo "wrong directory path, check it!"
                 error_happens
             fi
-
-            #如果$config_dir值不为空的话，则继续$2的判断            
+        
             if [[ -n $config_dir ]]
             then
                 case "$2" in
-                    -wset) #自定义宽度
+                    -wset)
                         while true
                         do
                             read -p "set width:" width
-                            if [[ ! -z `grep '^[[:digit:]]*$' <<< "${width}"` ]] #判断输入的字符串是否全为数字
+                            if [[ ! -z `grep '^[[:digit:]]*$' <<< "${width}"` ]]
                             then
                                 echo "directory: $config_dir"> ~/.randombg_config                                
                                 echo "width: $width">> ~/.randombg_config
@@ -516,18 +526,18 @@ then
                                 echo -e "\033[32mSorry.Please input a number.\033[0m"
                             fi
                         done;;
-                    -w2560|-w1920|-w1680|-w1440|-w1366|-w1280|-w1024|-w800) #设定图像宽度        
-                        config_width=`sed "s/-w//g" <<< "$2"` #从$2中判断图像宽度
+                    -w2560|-w1920|-w1680|-w1440|-w1366|-w1280|-w1024|-w800)       
+                        config_width=`sed "s/-w//g" <<< "$2"`
                         echo "directory: $config_dir"> ~/.randombg_config                                
                         echo "width: $config_width">> ~/.randombg_config
                         echo "interval: $config_interval">> ~/.randombg_config
                         echo "sound: $config_sound">> ~/.randombg_config
                         final_steps;;
-                    -iset) #自定义间隔时间
+                    -iset)
                         while true
                         do
                             read -p "set interval:" interval
-                            if [[ ! -z `grep '^[[:digit:]]*$' <<< "${interval}"` ]] #判断输入的字符串是否全为数字
+                            if [[ ! -z `grep '^[[:digit:]]*$' <<< "${interval}"` ]]
                             then                                
                                 echo "directory: $config_dir"> ~/.randombg_config                                
                                 echo "width: $config_width">> ~/.randombg_config
@@ -540,14 +550,14 @@ then
                                 echo -e "\033[32mSorry.Please input a number.\033[0m"
                             fi
                         done;;
-                    -i240|-i120|-i60|-i30|-i15|-i0) #设置间隔时间        
-                        config_interval=`sed "s/-i//g" <<< "$2"` #从$2中判断间隔时间
+                    -i240|-i120|-i60|-i30|-i15|-i0)     
+                        config_interval=`sed "s/-i//g" <<< "$2"`
                         echo "directory: $config_dir"> ~/.randombg_config                                
                         echo "width: $config_width">> ~/.randombg_config
                         echo "interval: $config_interval">> ~/.randombg_config
                         echo "sound: $config_sound">> ~/.randombg_config
                         final_steps;;
-                    *)#其他
+                    *)
                         error_happens;;
                 esac
             else
@@ -555,17 +565,17 @@ then
                 echo "Usage: $0 [full_dir_path] [-w2560|-w1920|-w1680|-w1440|-w1366|-w1280|-w1024|-w800]"
                 exit 1
             fi;;
-        -wset) #自定义宽度
+        -wset)
             kill_old_randombg
             check_db
             check_config
             while true
             do
                 read -p "set width:" width
-                if [[ ! -z `grep '^[[:digit:]]*$' <<< "${width}"` ]] #判断输入的字符串是否全为数字
+                if [[ ! -z `grep '^[[:digit:]]*$' <<< "${width}"` ]]
                 then
                     config_width=$width
-                    sed -i "s/^width.*$/width:\ $config_width/g" ~/.randombg_config #将宽度值写入.randombg_config                    
+                    sed -i "s/^width.*$/width:\ $config_width/g" ~/.randombg_config                 
                     break
                 else
                     echo -e "\033[32mSorry.Please input a number.\033[0m"
@@ -577,60 +587,60 @@ then
                     while true
                     do
                         read -p "set interval:" interval
-                        if [[ ! -z `grep '^[[:digit:]]*$' <<< "${interval}"` ]] #判断输入的字符串是否全为数字
+                        if [[ ! -z `grep '^[[:digit:]]*$' <<< "${interval}"` ]]
                         then
                             config_interval=$interval
-                            sed -i "s/^interval.*$/interval:\ $interval/g" ~/.randombg_config #将分钟间隔值写入.randombg_config                 
+                            sed -i "s/^interval.*$/interval:\ $interval/g" ~/.randombg_config              
                             final_steps
                             break
                         else
                             echo -e "\033[32mSorry.Please input a number.\033[0m"
                         fi
                     done;;
-                -i240|-i120|-i60|-i30|-i15|-i0) #设置间隔时间
-                    config_interval=`sed "s/-i//g" <<< "$2"` #从$2中判断间隔时间
-                    sed -i "s/^interval.*$/interval:\ $config_interval/g" ~/.randombg_config #将分钟间隔值写入.randombg_config
+                -i240|-i120|-i60|-i30|-i15|-i0)
+                    config_interval=`sed "s/-i//g" <<< "$2"`
+                    sed -i "s/^interval.*$/interval:\ $config_interval/g" ~/.randombg_config
                     final_steps;;
                 *)
                     error_happens;;
             esac;;
 
-        -w2560|-w1920|-w1680|-w1440|-w1366|-w1280|-w1024|-w800) #设定图像宽度
+        -w2560|-w1920|-w1680|-w1440|-w1366|-w1280|-w1024|-w800)
             kill_old_randombg
             check_db
             check_config
-            config_width=`sed "s/-w//g" <<< "$1"` #从$2中判断图像宽度
-            sed -i "s/^width.*$/width:\ $config_width/g" ~/.randombg_config #将宽度值写入.randombg_config 
+            config_width=`sed "s/-w//g" <<< "$1"`
+            sed -i "s/^width.*$/width:\ $config_width/g" ~/.randombg_config
 
             case "$2" in
                 -iset)
                     while true
                     do
                         read -p "set interval:" interval
-                        if [[ ! -z `grep '^[[:digit:]]*$' <<< "${interval}"` ]] #判断输入的字符串是否全为数字
+                        if [[ ! -z `grep '^[[:digit:]]*$' <<< "${interval}"` ]]
                         then
                             config_interval=$interval
-                            sed -i "s/^interval.*$/interval:\ $interval/g" ~/.randombg_config #将分钟间隔值写入.randombg_config                 
+                            sed -i "s/^interval.*$/interval:\ $interval/g" ~/.randombg_config             
                             final_steps
                             break
                         else
                             echo -e "\033[32mSorry.Please input a number.\033[0m"
                         fi
                     done;;
-                -i240|-i120|-i60|-i30|-i15|-i0) #设置间隔时间
-                    config_interval=`sed "s/-i//g" <<< "$2"` #从$2中判断间隔时间
-                    sed -i "s/^interval.*$/interval:\ $config_interval/g" ~/.randombg_config #将分钟间隔值写入.randombg_config
+                -i240|-i120|-i60|-i30|-i15|-i0)
+                    config_interval=`sed "s/-i//g" <<< "$2"`
+                    sed -i "s/^interval.*$/interval:\ $config_interval/g" ~/.randombg_config
                     final_steps;;
                 *)
                     error_happens;;
             esac;;
 
-        *)#其他
+        *)
             error_happens;;
     esac
 fi
 #=================================================#
-#===============如果传递参数个数为3===============#
+#===============     $# -eq 3      ===============#
 #=================================================#
 if [ $# -eq 3 ]
 then
@@ -647,10 +657,8 @@ then
 
         if [[ -d "$1" ]] && [[ -z `cat ~/.randombg_list|awk '{$1="";$2="";$3="";print}'|grep "$1"` ]]
         then 
-            #搜索png图片，最后一小步去掉那些高度或宽度不适合做壁纸的图片
             echo "This directory is not in your randombg_list database file, now I'll update it. "
             find $1 -type f -iname '*.png' -exec file {} \;|sed 's/\(.*png\): .* \([0-9]* x [0-9]*\).*/\2 \1/'|sed 's/^\s*//g'|awk 'int($1)>=800 && int($3)>=600{print}'>>~/.randombg_list
-            #搜索jpg图片，最后一小步去掉那些高度或宽度不适合做壁纸的图片
             find $1 -type f -iname '*.jpg' -exec file {} \;|sed -e "s/\:\ JPEG\ image\ data.*\ precision\ 8\,//g" -e "s/\,\ frames\ .//g"|awk '{print $NF;$NF="";print}'|sed 'N;s/\n/\ /'|sed "s/x/\ x\ /"|awk 'int($1)>=800 && int($3)>=600{print}'>>~/.randombg_list            
         fi
 
@@ -661,7 +669,7 @@ then
             while true
             do
                 read -p "set width:" width
-                if [[ ! -z `grep '^[[:digit:]]*$' <<< "${width}"` ]] #判断输入的字符串是否全为数字
+                if [[ ! -z `grep '^[[:digit:]]*$' <<< "${width}"` ]]
                 then                               
                     echo "width: $width">> ~/.randombg_config
                     break
@@ -672,7 +680,7 @@ then
         fi
 
         if [[ $2 == "-w2560"||$2 == "-w1920" ||$2 == "-w1680" ||$2 == "-w1440" ||$2 == "-w1366" ||$2 == "-w1280" ||$2 == "-w1024" ||$2 == "-w800"   ]]; then
-            config_width=`sed "s/-w//g" <<< "$2"` #从$2中判断图像宽度                           
+            config_width=`sed "s/-w//g" <<< "$2"`                   
             echo "width: $2">> ~/.randombg_config
         fi
 
@@ -680,9 +688,9 @@ then
             while true
             do
                 read -p "set interval:" interval
-                if [[ ! -z `grep '^[[:digit:]]*$' <<< "${interval}"` ]] #判断输入的字符串是否全为数字
+                if [[ ! -z `grep '^[[:digit:]]*$' <<< "${interval}"` ]]
                 then
-                    echo "interval: $interval">> ~/.randombg_config #将分钟间隔值写入.randombg_config
+                    echo "interval: $interval">> ~/.randombg_config
                     break
                 else
                     echo -e "\033[32mSorry.Please input a number.\033[0m"
@@ -691,8 +699,8 @@ then
         fi
 
         if [[ $3 == "-i240"||$3 == "-i120" ||$3 == "-i60" ||$3 == "-i30" ||$3 == "-i15" ||$3 == "-i0" ]]; then
-            config_interval=`sed "s/-i//g" <<< "$3"` #从$3中判断间隔时间
-            echo "interval: $config_interval">> ~/.randombg_config #将分钟间隔值写入.randombg_config
+            config_interval=`sed "s/-i//g" <<< "$3"`
+            echo "interval: $config_interval">> ~/.randombg_config
         fi
 
         check_config
@@ -702,7 +710,7 @@ then
     fi
 fi
 #=================================================#
-#==============如果传递参数个数大于3==============#
+#===============     $# -gt 3      ===============#
 #=================================================#
 if [ $# -gt 3 ]
 then
